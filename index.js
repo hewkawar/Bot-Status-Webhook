@@ -1,20 +1,9 @@
 const fs = require("fs");
-const { WebhookClient, EmbedBuilder, Colors, REST, Routes, Client, GatewayIntentBits, Events } = require("discord.js");
+const { WebhookClient, EmbedBuilder, Colors } = require("discord.js");
 
-const bot = require("./configs/bot.json");
 const bots = require("./configs/bots.json");
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences
-    ]
-});
-
-client.login(bot.token);
-
-client.on(Events.ClientReady, async (client) => {
+(async () => {
     const webhookUrl = JSON.parse(fs.readFileSync("configs/webhook.json", { encoding: "utf-8" }));
     const haveMessage = fs.existsSync("configs/message.json");
 
@@ -35,16 +24,19 @@ client.on(Events.ClientReady, async (client) => {
 
     const messageData = JSON.parse(fs.readFileSync("configs/message.json", { encoding: "utf-8" }));
 
-    const guild = await client.guilds.fetch(bot.guildId);
-
     const botsStatus = await Promise.all(bots.map(async (raw) => {
-        const member = await guild.members.fetch(raw.id);
-        const presence = member.presence ? member.presence.status : "offline";
+        const statusRes = await fetch(`https://tapi.hewkawar.xyz/api/v1/discord/users/${raw.id}`, {
+            headers: {
+                "User-Agent": "Bot-Status-Bettery/1.0.0"
+            }
+        });
 
+        const status = await statusRes.json();
+        
         return {
-            name: member.user.username,
-            value: `\`\`\`${presence == "online" ? "🟢 Bot Ready" : "🔴 Bot Busy"}\`\`\``,
-            console: presence == "online" ? "🟢 Bot Ready" : "🔴 Bot Busy"
+            name: status.user.username,
+            value: `\`\`\`${status.presence == "online" ? "🟢 Bot Ready" : status.presence == "dnd" ? "⛔ Bot Busy" : status.presence == "idle" ? "🌙 Bot Idle" : "🔴 Bot Offline"}\`\`\``,
+            console: status.presence == "online" ? "🟢 Bot Ready" : status.presence == "dnd" ? "⛔ Bot Busy" : status.presence == "idle" ? "🌙 Bot Idle" : "🔴 Bot Offline"
         }
     }));
 
@@ -62,12 +54,10 @@ client.on(Events.ClientReady, async (client) => {
         ]
     });
 
-    await client.destroy();
-
     const statusString = botsStatus.map((value) => `${value.name} - ${value.console}`).join("\n");
 
     const now = new Date();
 
     console.log(`Last Updated: ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} - ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`);
     console.log(statusString);
-});
+})();
