@@ -3,7 +3,7 @@ const { WebhookClient, EmbedBuilder, Colors } = require("discord.js");
 
 const bots = require("./configs/bots.json");
 
-(async () => {
+async function App() {
     const webhookUrl = JSON.parse(fs.readFileSync("configs/webhook.json", { encoding: "utf-8" }));
     const haveMessage = fs.existsSync("configs/message.json");
 
@@ -60,4 +60,10 @@ const bots = require("./configs/bots.json");
 
     console.log(`Last Updated: ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} - ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`);
     console.log(statusString);
-})();
+}
+
+App();
+
+setInterval(() => {
+    App();
+}, 60_000); // Every 1 minute
